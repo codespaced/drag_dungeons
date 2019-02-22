@@ -6,6 +6,8 @@ import component as c
 import const
 import processor as p
 
+from map_objects.generator import DungeonGenerator
+
 
 class Game:
     action = {}
@@ -17,6 +19,7 @@ class Game:
 
     def __init__(self):
         self.world = esper.World()
+        self.dungeon_generator = DungeonGenerator(const.MAP_SETTINGS)
 
     def on_start(self):
         processors = (
@@ -36,13 +39,31 @@ class Game:
         self.world.add_component(player, c.Renderable())
         self.world.add_component(player, c.Event({}))
 
+        self.dungeon_generator.initialize_map()
+        self.dungeon_generator.place_random_rooms(
+            min_room_size=const.MAP_SETTINGS["min_room_size"],
+            max_room_size=const.MAP_SETTINGS["max_room_size"],
+        )
+        self.dungeon_generator.build_corridors()
+
     def on_update(self):
         # print("on_update")
-        self.world.process()
+        self.world.process(game_map=self.dungeon_generator.dungeon)
         generator = self.world.get_component(c.Event)
         for ent, event in generator:
             if event.action.get("exit"):
                 self.quit_game()
+            if event.action.get("remake"):
+                self.remake_map()
+
+    def remake_map(self):
+        self.dungeon_generator.clear_map()
+        self.dungeon_generator.initialize_map()
+        self.dungeon_generator.place_random_rooms(
+            min_room_size=const.MAP_SETTINGS["min_room_size"],
+            max_room_size=const.MAP_SETTINGS["max_room_size"]
+        )
+        self.dungeon_generator.build_corridors()
 
 
 def main():

@@ -4,6 +4,8 @@ from bearlibterminal import terminal
 import component as c
 import const
 
+from map_objects.enums import TileType
+
 
 class RenderProcessor(esper.Processor):
     def __init__(self):
@@ -16,8 +18,30 @@ class RenderProcessor(esper.Processor):
 
     def process(self, **kwargs):
         self.render_all()
+        self.render_map(kwargs.get("game_map"))
         self.refresh_terminal()
         self.clear_all()
+
+    def render_map(self, game_map):
+        if game_map:
+            for point, tile in game_map:
+                color = terminal.color_from_name("white")
+                ch = "X"
+                if tile.label == TileType.EMPTY:
+                    color = terminal.color_from_name("black")
+                    ch = "-"
+                elif tile.label == TileType.FLOOR:
+                    color = terminal.color_from_name("grey")
+                    ch = "."
+                elif tile.label == TileType.WALL:
+                    color = terminal.color_from_name("black")
+                    ch = "#"
+                elif tile.label == TileType.CORRIDOR:
+                    color = terminal.color_from_name("dark_grey")
+                    ch = "+"
+                terminal.layer(0)
+                terminal.bkcolor(color)
+                terminal.put(point.x, point.y, " ")
 
     def render_all(self):
         generator = self.world.get_components(c.Renderable, c.Position)

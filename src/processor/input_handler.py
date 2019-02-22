@@ -47,5 +47,7 @@ class InputProcessor(esper.Processor):
             return {"move": (0, 0)}
         elif key == terminal.TK_ESCAPE or key == terminal.TK_CLOSE:
             return {"exit": True}
+        elif key == terminal.TK_R:
+            return {"remake": True}
 
         return {}
