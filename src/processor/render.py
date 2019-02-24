@@ -26,33 +26,38 @@ class RenderProcessor(esper.Processor):
         if game_map:
             for point, tile in game_map:
                 color = terminal.color_from_name("white")
-                ch = "X"
+                ch = const.Tiles.UNSEEN
                 if tile.label == TileType.EMPTY:
                     color = terminal.color_from_name("black")
-                    ch = "-"
+                    # ch = const.Tiles.UNSEEN
                 elif tile.label == TileType.FLOOR:
                     color = terminal.color_from_name("grey")
-                    ch = "."
+                    ch = const.Tiles.FLOOR
                 elif tile.label == TileType.WALL:
                     color = terminal.color_from_name("black")
-                    ch = "#"
+                    ch = const.Tiles.WALL
                 elif tile.label == TileType.CORRIDOR:
                     color = terminal.color_from_name("dark_grey")
-                    ch = "+"
-                terminal.layer(0)
+                    ch = const.Tiles.CORRIDOR
+                terminal.layer(const.Layers.MAP)
                 terminal.bkcolor(color)
-                terminal.put(point.x, point.y, " ")
+                terminal.put(point.x, point.y, ch)
+
+        terminal.put(10, 10, "\uE003")
 
     def render_all(self):
         generator = self.world.get_components(c.Renderable, c.Position)
 
         for ent, (rend, pos) in generator:
             color = terminal.color_from_argb(255, r=rend.fg[0], g=rend.fg[1], b=rend.fg[2])
+            terminal.layer(const.Layers.PLAYER)
             terminal.color(color)
             terminal.put(x=int(pos.x), y=int(pos.y), c=rend.ch)
 
-    def refresh_terminal(self):
+    @staticmethod
+    def refresh_terminal():
         terminal.refresh()
 
-    def clear_all(self):
+    @staticmethod
+    def clear_all():
         terminal.clear()

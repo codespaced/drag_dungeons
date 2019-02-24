@@ -1,3 +1,6 @@
+from bearlibterminal  import terminal
+
+
 TITLE = "Drag Dungeons"
 
 SCREEN_WIDTH = 80
@@ -18,8 +21,47 @@ MAP_SETTINGS = {
     "room_margin": 1,
 }
 
+COLORS = {
+    "transparent",
+    "none",
+    "black",
+    "white",
+    "grey",
+    "gray",
+    "red",
+    "flame",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "chartreuse",
+    "green",
+    "sea",
+    "turquoise",
+    "cyan",
+    "sky",
+    "azure",
+    "blue",
+    "han",
+    "violet",
+    "purple",
+    "fuchsia",
+    "magenta",
+    "pink",
+    "crimson",
+    }
+
 
 class Layers:
     BACKGROUND = 0
     MAP = 10
     PLAYER = 20
+    LIGHT = 30
+
+
+class Tiles:
+    UNSEEN = "\uE004"
+    FLOOR = "\uE000"
+    CORRIDOR = "\uE001"
+    WALL = "\uE002"
+    CONNECT = "\uE003"

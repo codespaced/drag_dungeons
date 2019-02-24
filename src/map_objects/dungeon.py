@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy
 
 from map_objects.enums import TileType
@@ -7,13 +9,14 @@ from map_objects.tile import Tile
 
 class Dungeon:
     def __init__(self, height: int, width: int):
-        self.height = height
-        self.width = width
+        self.height: int = height
+        self.width: int = width
         self.rooms = []
 
-        self.grid_shape = (height, width)
+        self.grid_shape: Tuple[int, int] = (height, width)
         self.tile_grid = numpy.full(shape=self.grid_shape, fill_value=Tile.empty())
-        self.region_grid = numpy.full(shape=self.grid_shape, fill_value=-1, dtype=int)
+        self.region_grid = numpy.full(shape=self.grid_shape, fill_value=-1, dtype=numpy.int)
+        self.fov_grid = numpy.zeros(shape=self.grid_shape)
 
     @property
     def rows(self):
