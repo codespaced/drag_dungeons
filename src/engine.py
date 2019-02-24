@@ -1,4 +1,5 @@
 import esper
+import random
 
 from bearlibterminal import terminal
 
@@ -12,6 +13,7 @@ from map_objects.generator import DungeonGenerator
 class Game:
     action = {}
     game_exit = False
+    map_seed = "TEST_MAP"
 
     @classmethod
     def quit_game(cls):
@@ -32,6 +34,7 @@ class Game:
             self.world.add_processor(proc, priority=num)
 
     def on_enter(self):
+        random.seed(self.map_seed)
         player = self.world.create_entity()
         self.world.add_component(player, c.Position(x=const.SCREEN_WIDTH/2, y=const.SCREEN_HEIGHT/2))
         self.world.add_component(player, c.Velocity())
@@ -57,6 +60,8 @@ class Game:
                 self.remake_map()
 
     def remake_map(self):
+        random.seed(self.map_seed)
+        print("map reset")
         self.dungeon_generator.clear_map()
         self.dungeon_generator.initialize_map()
         self.dungeon_generator.place_random_rooms(

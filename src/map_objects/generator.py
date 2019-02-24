@@ -1,10 +1,8 @@
-from dataclasses import dataclass
-
 import numpy as np
+import random
 
 from collections import OrderedDict
-# from loguru import logger
-from random import randrange, randint, choice
+from dataclasses import dataclass
 from typing import List
 
 from map_objects.dungeon import Dungeon
@@ -13,7 +11,6 @@ from map_objects.point import Point
 from map_objects.tile import Tile
 
 
-# @dataclass(init=False, repr=True)
 class Room:
     """
     Args:
@@ -68,8 +65,7 @@ class Room:
 
 class DungeonGenerator:
     def __init__(self, map_settings: dict):
-        # self.height = abs(map_settings["map_height"])
-        # self.width = abs(map_settings["map_width"])
+
         self.dungeon = Dungeon(map_settings["map_height"], map_settings["map_width"])
 
         self.current_region: int = -1
@@ -81,33 +77,29 @@ class DungeonGenerator:
         self.map_settings = OrderedDict(map_settings)
         self.winding_percent: int = 20
 
+        self.seed = ()
+
     def __iter__(self):
-        # for j in range(self.height):
-        #     for i in range(self.width):
-        #         yield i, j, self.grid[i][j]
         for x, y, tile in self.dungeon.tile_grid:
             yield x, y, tile
 
     def new_region(self) -> int:
+        """
+        increases current_region by 1 and then returns current_region
+        """
         self.current_region += 1
         return self.current_region
 
-    def display(self):
-        """
-        iterator that begins at bottom left of the dungeon to display properly
-        :rtype: List[int, int, Point]
-        """
-        for i in range(self.height - 1, 0, -1):
-            for j in range(self.width):
-                # yield i, j - 1, self.grid[i][j - 1]
-                yield j, i, self.dungeon.tile(Point(j, i))
-
-        """
-            def __iter__(self):
-        for i in range(self.height):
-            for j in range(self.width):
-                yield Point(x=self.x + j, y=self.y + i)
-        """
+    # TODO: remove if not needed
+    # def display(self):
+    #     """
+    #     iterator that begins at bottom left of the dungeon to display properly
+    #     :rtype: List[int, int, Tile]
+    #     """
+    #     for i in range(self.height - 1, 0, -1):
+    #         for j in range(self.width):
+    #             # yield i, j - 1, self.grid[i][j - 1]
+    #             yield j, i, self.dungeon.tile(Point(j, i))
 
     def initialize_map(self):
         for y in self.dungeon.rows:
@@ -186,8 +178,8 @@ class DungeonGenerator:
         for _ in range(attempts):
             if len(self.rooms) >= self.map_settings["num_rooms"]:
                 break
-            room_width = randrange(min_room_size, max_room_size, room_step)
-            room_height = randrange(min_room_size, max_room_size, room_step)
+            room_width = random.randrange(min_room_size, max_room_size, room_step)
+            room_height = random.randrange(min_room_size, max_room_size, room_step)
             start_point = self.random_point()
             self.place_room(
                 start_point.x, start_point.y, room_width, room_height, margin
@@ -258,11 +250,11 @@ class DungeonGenerator:
 
                 if (
                     last_direction in open_tiles
-                    and randint(1, 101) > self.winding_percent
+                    and random.randint(1, 101) > self.winding_percent
                 ):
                     current_direction = last_direction
                 else:
-                    current_direction = open_tiles[randint(0, len(open_tiles) - 1)]
+                    current_direction = open_tiles[random.randint(0, len(open_tiles) - 1)]
 
                 self.carve(tile + current_direction, region, label)
                 self.carve(tile + current_direction * 2, region, label)
@@ -336,14 +328,14 @@ class DungeonGenerator:
         cells = []
         if start_point is None:
             start_point = Point(
-                x=randint(1, self.width - 2), y=randint(1, self.height - 2)
+                x=random.randint(1, self.width - 2), y=random.randint(1, self.height - 2)
             )
             # TODO: refactor can_carve
         attempts = 0
         while not self.can_carve(start_point, Direction.self()):
             attempts += 1
             start_point = Point(
-                x=randint(1, self.width - 2), y=randint(1, self.height - 2)
+                x=random.randint(1, self.width - 2), y=random.randint(1, self.height - 2)
             )
             # TODO: need to remove this hard stop once everything is combined
             if attempts > 100:
@@ -361,7 +353,7 @@ class DungeonGenerator:
             possible_moves = self.possible_moves(start_point)
             if possible_moves:
                 # logger.debug(f"possible_moves is {len(possible_moves)} long")
-                point = choice(possible_moves)
+                point = random.choice(possible_moves)
                 # logger.debug(f"chosen point is {point}")
                 self.carve(
                     pos=point, region=self.current_region, label=TileType.CORRIDOR
@@ -414,5 +406,5 @@ class DungeonGenerator:
 
     def random_point(self) -> Point:
         return Point(
-            x=randint(0, self.dungeon.width), y=randint(0, self.dungeon.height)
+            x=random.randint(0, self.dungeon.width), y=random.randint(0, self.dungeon.height)
         )
