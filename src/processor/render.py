@@ -23,7 +23,10 @@ class RenderProcessor(esper.Processor):
         self.clear_all()
 
     def render_map(self, game_map):
+        testing = False
         if game_map:
+            if testing:
+                return self.render_test_map()
             for point, tile in game_map:
                 color = terminal.color_from_name("white")
                 ch = const.Tiles.UNSEEN
@@ -43,7 +46,11 @@ class RenderProcessor(esper.Processor):
                 terminal.bkcolor(color)
                 terminal.put(point.x, point.y, ch)
 
+        terminal.color(terminal.color_from_name("white"))
         terminal.put(10, 10, "\uE003")
+
+    def render_test_map(self):
+        pass
 
     def render_all(self):
         generator = self.world.get_components(c.Renderable, c.Position)

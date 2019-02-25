@@ -51,7 +51,7 @@ class Game:
 
     def on_update(self):
         # print("on_update")
-        self.world.process(game_map=self.dungeon_generator.dungeon)
+        self.world.process(game_map=self.dungeon_generator.tile_map)
         generator = self.world.get_component(c.Event)
         for ent, event in generator:
             if event.action.get("exit"):
