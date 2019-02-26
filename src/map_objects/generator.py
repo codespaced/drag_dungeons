@@ -77,11 +77,17 @@ class DungeonGenerator:
         self.map_settings = OrderedDict(map_settings)
         self.winding_percent: int = 20
 
-        self.seed = ()
+        self.seed = None
 
     def __iter__(self):
+        # TODO: replace by property self.tile_map
         for x, y, tile in self.dungeon.tile_grid:
             yield x, y, tile
+
+    @property
+    def tile_map(self):
+        for point, grids in self.dungeon:
+            yield point, Tile.from_grid(point, grids)
 
     def new_region(self) -> int:
         """
@@ -104,7 +110,7 @@ class DungeonGenerator:
     def initialize_map(self):
         for y in self.dungeon.rows:
             for x in self.dungeon.columns:
-                self.dungeon.set_tile(Point(x, y), TileType.WALL)
+                self.dungeon.place(Point(x, y), Tile.wall(Point(x, y)), region=-1)
 
     # TODO: refactor self.tile to take Point
     def tile(self, x: int, y: int) -> Tile:
@@ -117,7 +123,10 @@ class DungeonGenerator:
         :return: Tile at coordinate (x, y)
         :rtype: Tile
         """
-        tile = self.dungeon.tile(Point(x, y))
+
+        grids = self.dungeon.grids(Point(x, y))
+        tile = Tile.from_grid(Point(x, y), grids)
+
         return tile
 
     # TODO: replace start_x and start_y with Point variable
@@ -147,19 +156,21 @@ class DungeonGenerator:
         """
         room = Room(start_x, start_y, room_width, room_height)
         if self.room_fits(room, margin) or ignore_overlap:
-            room.region = self.new_region()
+            region = self.new_region()
+            room.region = region
             for point in room:
-                # print(point)
-                self.dungeon.set_tile(point, TileType.FLOOR)
-                self.dungeon.set_region(point, self.current_region)
+
+                tile = Tile.floor(point)
+                self.dungeon.place(point, tile, region)
+
             self.rooms.append(room)
 
     def place_random_rooms(
         self,
         min_room_size: int,
         max_room_size: int,
-        room_step: int = 1,
-        margin: int = 1,
+        room_step: int = 2,
+        margin: int = None,
         attempts: int = 500,
     ):
         """
@@ -175,6 +186,8 @@ class DungeonGenerator:
         :param attempts: number of times 
         :type attempts: int
         """
+        if margin is None:
+            margin = self.map_settings["room_margin"]
         for _ in range(attempts):
             if len(self.rooms) >= self.map_settings["num_rooms"]:
                 break
@@ -317,12 +330,10 @@ class DungeonGenerator:
                     return False
         return True
 
-    def carve(self, pos: Point, region: int, label: TileType = None):
-        if label is None:
-            label = TileType.FLOOR
+    def carve(self, point: Point, region: int, label: TileType = TileType.FLOOR):
 
-        self.dungeon.set_tile(pos, label)
-        self.dungeon.set_region(pos, region)
+        tile = Tile.from_label(point, label)
+        self.dungeon.place(point, tile, region)
 
     def build_corridors(self, start_point: Point = None):
         cells = []
@@ -341,7 +352,7 @@ class DungeonGenerator:
             if attempts > 100:
                 break
 
-        self.carve(pos=start_point, region=self.new_region(), label=TileType.CORRIDOR)
+        self.carve(point=start_point, region=self.new_region(), label=TileType.CORRIDOR)
         # add point to corridor list
         self.corridors.append(start_point)
         # add point to open cell list
@@ -356,7 +367,7 @@ class DungeonGenerator:
                 point = random.choice(possible_moves)
                 # logger.debug(f"chosen point is {point}")
                 self.carve(
-                    pos=point, region=self.current_region, label=TileType.CORRIDOR
+                    point=point, region=self.current_region, label=TileType.CORRIDOR
                 )
                 self.corridors.append(point)
                 cells.append(point)

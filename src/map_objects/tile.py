@@ -1,3 +1,5 @@
+from typing import Dict
+
 from map_objects.enums import TileType
 from map_objects.point import Point
 
@@ -14,16 +16,29 @@ class Tile:
     Attributes:
         position: the Point in the grid
         label: label of the tile
+        blocked:
+        blocks_sight:
         passable: if the tile is passable
     """
 
-    def __init__(self, x: int, y: int, *, label: TileType = TileType.EMPTY, passable: bool = False):
+    def __init__(
+        self,
+        x: int,
+        y: int,
+        *,
+        label: TileType = TileType.EMPTY,
+        blocked: bool = True,
+        blocks_sight: bool = True,
+        passable: bool = False,
+    ):
         self.position: Point = Point(x, y)
         self.label: TileType = label
+        self.blocked: bool = blocked
+        self.blocks_sight: bool = blocks_sight
         self.passable: bool = passable
 
     def __str__(self):
-        return f"Tile{self.position} = {self.label}, {self.passable}"
+        return f"{self.label.name} {self.position}"
 
     def __repr__(self):
         return f"({self.__class__.__name__}) x={self.x}, y={self.y}, label={self.label}, passable={self.passable}"
@@ -47,22 +62,19 @@ class Tile:
         :return: returns a tile at x and y of point with the label provided
         :rtype: Tile
         """
-        if label is TileType.EMPTY:
+        if label == TileType.EMPTY:
             return Tile.empty(point)
-        elif label is TileType.FLOOR:
+        elif label == TileType.FLOOR:
             return Tile.floor(point)
-        elif label is TileType.WALL:
+        elif label == TileType.WALL:
             return Tile.wall(point)
-        elif label is TileType.DOOR:
+        elif label == TileType.DOOR:
             return Tile.door(point)
-        elif label is TileType.CORRIDOR:
+        elif label == TileType.CORRIDOR:
             return Tile.corridor(point)
 
+        print(f"Tile.from_label returned Tile.error. point={point}, label={label}")
         return Tile.error(point)
-
-    @property
-    def tile_color(self) -> tuple:
-        return self.label()
 
     @classmethod
     def empty(cls, point=Point(-1, -1)):
@@ -73,7 +85,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "EMPTY" and not passable
         :rtype Tile
         """
-        return Tile(point.x, point.y, label=TileType.EMPTY, passable=False)
+        return Tile(point.x, point.y, label=TileType.EMPTY)
 
     @classmethod
     def floor(cls, point):
@@ -84,7 +96,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "FLOOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.FLOOR, passable=True)
+        return Tile(point.x, point.y, label=TileType.FLOOR, blocked=False, blocks_sight=False)
 
     @classmethod
     def corridor(cls, point):
@@ -95,7 +107,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "CORRIDOR" and passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.CORRIDOR, passable=True)
+        return Tile(point.x, point.y, label=TileType.CORRIDOR, blocked=False, blocks_sight=False)
 
     @classmethod
     def wall(cls, point):
@@ -106,7 +118,7 @@ class Tile:
         :return: returns a tile at x and y of point with the label "WALL" and not passable
         :rtype: Tile
         """
-        return Tile(point.x, point.y, label=TileType.WALL, passable=False)
+        return Tile(point.x, point.y, label=TileType.WALL, blocked=True, blocks_sight=True)
 
     @classmethod
     def door(cls, point):
@@ -121,4 +133,16 @@ class Tile:
 
     @classmethod
     def error(cls, point):
-        return Tile(point.x, point.y, label=TileType.RED)
+        return Tile(point.x, point.y, label=TileType.ERROR)
+
+    @classmethod
+    def from_grid(cls, point: Point, grids: Dict[str, int]):
+        tile = Tile(
+            x=point.x,
+            y=point.y,
+            label=TileType(grids["label"]),
+            blocked=grids.get("blocked", True),
+            blocks_sight=grids.get("blocks_sight", True),
+        )
+
+        return tile

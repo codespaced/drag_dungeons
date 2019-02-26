@@ -37,15 +37,16 @@ class Direction(CallableEnum):
         return Point(0, 0)
 
 
-class TileType(CallableEnum):
-    WALL = (1, 1, 1, 1)
-    FLOOR = (.5, .5, .5, 1)
-    DOOR = (1, .5, .5, 1)
-    CORRIDOR = (.7, .2, .7, 1)
-    EMPTY = (.39, .8, .39, 1)
-    BLUE = (0, 0, 1, 1)
-    RED = (1, 0, 0, 1)
-    YELLOW = (1, 1, 0, 1)
+class TileType(Enum):
+    EMPTY = -1
+    WALL = 0
+    FLOOR = 1
+    CORRIDOR = 2
+    DOOR = 3
+
+    CONNECTION = 100
+
+    ERROR = 999
 
     def __str__(self):
         return str(self.name)
