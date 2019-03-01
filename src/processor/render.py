@@ -4,7 +4,7 @@ from bearlibterminal import terminal
 import component as c
 import const
 
-from map_objects.enums import TileType
+from map_objects.tile import TileType
 
 
 class RenderProcessor(esper.Processor):

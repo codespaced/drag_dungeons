@@ -1,14 +1,15 @@
 import numpy as np
 import random
 
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from dataclasses import dataclass
 from typing import List
+from loguru import logger
 
 from map_objects.dungeon import Dungeon
-from map_objects.enums import Direction, TileType
+from map_objects.enums import Direction
 from map_objects.point import Point
-from map_objects.tile import Tile
+from map_objects.tile import Tile, TileType
 
 
 class Room:
@@ -81,13 +82,17 @@ class DungeonGenerator:
 
     def __iter__(self):
         # TODO: replace by property self.tile_map
-        for x, y, tile in self.dungeon.tile_grid:
-            yield x, y, tile
+        for x, y, grids in self.dungeon.tile_map:
+            yield x, y, Tile.from_grid(Point(x, y), grids)
 
     @property
     def tile_map(self):
         for point, grids in self.dungeon:
             yield point, Tile.from_grid(point, grids)
+
+    @property
+    def max_rooms(self):
+        return self.map_settings["num_rooms"]
 
     def new_region(self) -> int:
         """
@@ -171,7 +176,7 @@ class DungeonGenerator:
         max_room_size: int,
         room_step: int = 2,
         margin: int = None,
-        attempts: int = 500,
+        attempts: int = 1000,
     ):
         """
 
@@ -189,7 +194,7 @@ class DungeonGenerator:
         if margin is None:
             margin = self.map_settings["room_margin"]
         for _ in range(attempts):
-            if len(self.rooms) >= self.map_settings["num_rooms"]:
+            if len(self.rooms) >= self.max_rooms:
                 break
             room_width = random.randrange(min_room_size, max_room_size, room_step)
             room_height = random.randrange(min_room_size, max_room_size, room_step)
@@ -235,16 +240,16 @@ class DungeonGenerator:
         :param start:
         :type start: Point
         :param label:
-        :type label: TileType
+        :type label: map_objects.tile.TileType
         """
 
         if label is None:
             label = TileType.CORRIDOR
-        tiles = []
+        tiles = []  # tiles to check
         last_direction = Point(0, 0)
 
         region = self.new_region()
-        self.carve(start, region, label)
+        self.place_tile(start, region=region, label=label)
 
         tiles.append(start)
         while len(tiles) > 0:
@@ -253,7 +258,7 @@ class DungeonGenerator:
             # see which neighboring tiles can be carved
             open_tiles = []
             for d in Direction.cardinal():
-                if self.can_carve(tile, d):
+                if self.can_place(tile, d):
                     # print("True")
                     open_tiles.append(d)
                 # else:
@@ -267,12 +272,17 @@ class DungeonGenerator:
                 ):
                     current_direction = last_direction
                 else:
-                    current_direction = open_tiles[random.randint(0, len(open_tiles) - 1)]
+                    # TODO: refactor for random.choice()
+                    current_direction = open_tiles[
+                        random.randint(0, len(open_tiles) - 1)
+                    ]
 
-                self.carve(tile + current_direction, region, label)
-                self.carve(tile + current_direction * 2, region, label)
+                self.place_tile(tile + current_direction, region=region, label=label)
+                self.corridors.append(tile + current_direction)
+                self.place_tile(tile + current_direction * 2, region=region, label=label)
+                self.corridors.append(tile + current_direction * 2)
 
-                open_tiles.append(tile + current_direction * 2)
+                tiles.append(tile + current_direction * 2)
                 last_direction = current_direction
             else:
                 # end current path
@@ -325,6 +335,8 @@ class DungeonGenerator:
 
         for x in xs:
             for y in ys:
+                if self.width <= pos.x + x or self.height <= pos.y + y:
+                    return False
                 tile = self.tile(pos.x + x, pos.y + y)
                 if tile.label != TileType.WALL:
                     return False
@@ -339,14 +351,16 @@ class DungeonGenerator:
         cells = []
         if start_point is None:
             start_point = Point(
-                x=random.randint(1, self.width - 2), y=random.randint(1, self.height - 2)
+                x=random.randint(1, self.width - 2),
+                y=random.randint(1, self.height - 2),
             )
             # TODO: refactor can_carve
         attempts = 0
         while not self.can_carve(start_point, Direction.self()):
             attempts += 1
             start_point = Point(
-                x=random.randint(1, self.width - 2), y=random.randint(1, self.height - 2)
+                x=random.randint(1, self.width - 2),
+                y=random.randint(1, self.height - 2),
             )
             # TODO: need to remove this hard stop once everything is combined
             if attempts > 100:
@@ -357,15 +371,13 @@ class DungeonGenerator:
         self.corridors.append(start_point)
         # add point to open cell list
         cells.append(start_point)
-        # logger.debug(f"first start_point added to cells: {cells}")
-        attempts = 0
+
         while cells:
+            middle = len(cells) // 2
             start_point = cells[-1]
             possible_moves = self.possible_moves(start_point)
             if possible_moves:
-                # logger.debug(f"possible_moves is {len(possible_moves)} long")
                 point = random.choice(possible_moves)
-                # logger.debug(f"chosen point is {point}")
                 self.carve(
                     point=point, region=self.current_region, label=TileType.CORRIDOR
                 )
@@ -373,12 +385,6 @@ class DungeonGenerator:
                 cells.append(point)
             else:
                 cells.remove(start_point)
-            # logger.debug(f"cells is {len(cells)} long")
-            # logger.debug(f"{cells}")
-            # attempts += 1
-            # if attempts > 15:
-            #     logger.add("debug.log")
-            #     break
 
     def possible_moves(self, pos: Point) -> List[Point]:
         """
@@ -395,7 +401,12 @@ class DungeonGenerator:
             # logger.debug(f"direction = {direction}")
             neighbor = pos + direction
             # logger.debug(f"neighbor = {neighbor}")
-            if neighbor.x < 1 or self.width - 2 < neighbor.x or neighbor.y < 1 or self.height - 2 < neighbor.y:
+            if (
+                neighbor.x < 1
+                or self.width - 2 < neighbor.x
+                or neighbor.y < 1
+                or self.height - 2 < neighbor.y
+            ):
                 # logger.debug(f"{neighbor} not in bounds")
                 continue
             if self.can_carve(pos, direction):
@@ -417,5 +428,125 @@ class DungeonGenerator:
 
     def random_point(self) -> Point:
         return Point(
-            x=random.randint(0, self.dungeon.width), y=random.randint(0, self.dungeon.height)
+            x=random.randint(0, self.dungeon.width),
+            y=random.randint(0, self.dungeon.height),
         )
+
+    def build_dungeon(self):
+        self.initialize_map()
+        self.place_random_rooms(
+            min_room_size=self.map_settings["min_room_size"],
+            max_room_size=self.map_settings["max_room_size"],
+        )
+
+        # start_point = self.find_empty_space(3)
+        # while start_point != Point(-1, -1):
+        #     self.build_corridors(start_point)
+        #     start_point = self.find_empty_space(3)
+
+        for y in range(1, self.height, 2):
+            for x in range(1, self.width, 2):
+                point = Point(x, y)
+                if self.dungeon.label(point) != TileType.WALL.value:
+                    continue
+                self.grow_maze(point)
+
+    def find_empty_space(self, distance: int) -> Point:
+        for x in range(distance, self.width - distance):
+            for y in range(distance, self.height - distance):
+                touching = 0
+                for xi in range(-distance, distance):
+                    for yi in range(-distance, distance):
+                        if self.dungeon.label(Point(x + xi, y + yi)):
+                            touching += 1
+                if touching == 0:
+                    print(f"returning {Point(x, y)}")
+                    return Point(x, y)
+        print("returning no point")
+        return Point(-1, -1)
+
+    def build_maze(self, label: TileType = None):
+        """
+        build maze using modified growing tree algorithm
+        :param label:
+        :type label:
+        :return: None
+        """
+        if label is None:
+            label = TileType.CORRIDOR
+
+        tiles = []  # tiles to check
+
+        for y in range(1, self.height, 2):
+            for x in range(1, self.width, 2):
+                point = Point(x, y)
+                if self.dungeon.label(point) != TileType.WALL.value:
+                    continue
+
+                #############################
+                # maze algorithm
+                #############################
+
+                self.place_maze(point)
+
+    def place_maze(self, start_point: Point, label: TileType = TileType.CORRIDOR):
+        points_to_check = []  # tiles to check
+        last_direction = Point(0, 0)
+        region = None
+
+        # place corridor tile at starting point
+        if self.can_place(start_point, Point(0, 0)):
+            region = self.new_region()
+            self.place_tile(start_point, label, region)
+            points_to_check.append(start_point)
+
+        while len(points_to_check) > 0:
+            current_point = points_to_check.pop(-1)  # grab last point added
+
+            # search neighbors for points that can be carved
+            open_points = []
+            for d in Direction.cardinal():
+                if self.can_place(current_point, d):
+                    open_points.append(d)
+
+
+    def place_tile(self, point: Point, label: TileType, region: int):
+        tile = Tile.from_label(point, label)
+        assert self.current_region == region
+
+    def can_place(self, point: Point, direction: Point) -> bool:
+        x, y = point
+
+        SliceBounds = namedtuple("SliceBounds", ["x1", "x2", "y1", "y2"])
+
+        bounds = {
+            Point(0, 0): SliceBounds(x1=point.x - 1, x2=point.x + 1, y1=point.y - 1, y2=point.y + 1),
+            Point(0, 1): SliceBounds(x1=point.x - 1, x2=point.x + 1, y1=point.y + 1, y2=point.y + 2),
+            Point(1, 0): SliceBounds(x1=point.x + 1, x2=point.x + 2, y1=point.y - 1, y2=point.y + 1),
+            Point(-1, 0): SliceBounds(x1=point.x - 2, x2=point.x - 1, y1=point.y - 1, y2=point.y + 1),
+            Point(0, -1): SliceBounds(x1=point.x - 1, x2=point.x + 1, y1=point.y - 2, y2=point.y - 1),
+        }
+
+        slices = {
+            Point(0, 0): np.s_[x-1:x+1, y-1:y+1],
+            Point(0, 1): np.s_[x-1:x+1, y+1:y+2],
+            Point(0, -1): np.s_[x-1:x+1, y-2:y-1],
+            Point(1, 0): np.s_[x+1:x+2, y-1:y+1],
+            Point(-1, 0): np.s_[x-2:x-1, y-1:y+1]
+        }
+
+        x1, x2, y1, y2 = bounds[direction]
+
+        if x1 < 0 or y1 < 0 or x2 > self.width or y2 > self.height:
+            return False
+
+        try:
+            grid_slice = self.dungeon.label_grid[x1:x2, y1:y2]
+            if grid_slice.max() != 0:
+                return False
+            else:
+                return True
+        except IndexError:
+            return False
+        except ValueError:
+            return False

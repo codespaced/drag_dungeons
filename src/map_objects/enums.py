@@ -31,22 +31,3 @@ class Direction(CallableEnum):
     def every(cls):
         for direction in cls:
             yield direction.value
-
-    @staticmethod
-    def self():
-        return Point(0, 0)
-
-
-class TileType(Enum):
-    EMPTY = -1
-    WALL = 0
-    FLOOR = 1
-    CORRIDOR = 2
-    DOOR = 3
-
-    CONNECTION = 100
-
-    ERROR = 999
-
-    def __str__(self):
-        return str(self.name)

@@ -2,12 +2,14 @@ import esper
 import random
 
 from bearlibterminal import terminal
+from loguru import logger
 
 import component as c
 import const
 import processor as p
 
-from map_objects.generator import DungeonGenerator
+from map_objects.generator import DungeonGenerator, Point
+from map_objects.tile import Tile, TileType
 
 
 class Game:
@@ -42,12 +44,14 @@ class Game:
         self.world.add_component(player, c.Renderable())
         self.world.add_component(player, c.Event({}))
 
-        self.dungeon_generator.initialize_map()
-        self.dungeon_generator.place_random_rooms(
-            min_room_size=const.MAP_SETTINGS["min_room_size"],
-            max_room_size=const.MAP_SETTINGS["max_room_size"],
-        )
-        self.dungeon_generator.build_corridors()
+        # self.dungeon_generator.initialize_map()
+        # self.dungeon_generator.place_random_rooms(
+        #     min_room_size=const.MAP_SETTINGS["min_room_size"],
+        #     max_room_size=const.MAP_SETTINGS["max_room_size"],
+        # )
+        # self.dungeon_generator.build_corridors()
+
+        self.dungeon_generator.build_dungeon()
 
     def on_update(self):
         # print("on_update")
@@ -61,14 +65,22 @@ class Game:
 
     def remake_map(self):
         random.seed(self.map_seed)
-        print("map reset")
         self.dungeon_generator.clear_map()
-        self.dungeon_generator.initialize_map()
-        self.dungeon_generator.place_random_rooms(
-            min_room_size=const.MAP_SETTINGS["min_room_size"],
-            max_room_size=const.MAP_SETTINGS["max_room_size"]
-        )
-        self.dungeon_generator.build_corridors()
+        # self.dungeon_generator.initialize_map()
+        # self.dungeon_generator.place_random_rooms(
+        #     min_room_size=const.MAP_SETTINGS["min_room_size"],
+        #     max_room_size=const.MAP_SETTINGS["max_room_size"]
+        # )
+        # self.dungeon_generator.build_corridors()
+
+        self.dungeon_generator.build_dungeon()
+
+        # self.dungeon_generator.dungeon.place(Point(1, 1), Tile.from_label(Point(1, 1), TileType.WALL),
+        #                                      region=self.dungeon_generator.current_region)
+        # self.dungeon_generator.dungeon.place(Point(1, 0), Tile.from_label(Point(1, 0), TileType.WALL),
+        #                                      region=self.dungeon_generator.current_region)
+        # can_place = self.dungeon_generator.can_place(point=Point(1, 1), direction=Point(0, 0))
+        # print(f"can_place @ (1, 1) = {can_place}")
 
 
 def main():
@@ -82,5 +94,6 @@ def main():
 
 if __name__ == "__main__":
     terminal.open()
+    logger.add("logs/build_maze_{time}.log", level="DEBUG", format="{time:HH:mm:ss} {message}")
     main()
     terminal.close()

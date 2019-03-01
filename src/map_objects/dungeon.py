@@ -2,10 +2,8 @@ import numpy
 
 from typing import Dict, Tuple, Iterable, List
 
-from map_objects.enums import TileType
 from map_objects.point import Point
-from map_objects.tile import Tile
-
+from map_objects.tile import Tile, TileType
 
 Grids = Dict[str, int]
 
@@ -67,9 +65,6 @@ class Dungeon:
         self.region_grid = numpy.full(
             shape=self.grid_shape, fill_value=-1, dtype=numpy.int
         ).T
-
-        print(f"After clear, (1, 1) = {self.label(Point(1, 1))}")
-
 
     def place(self, point: Point, tile: Tile, region: int):
         """

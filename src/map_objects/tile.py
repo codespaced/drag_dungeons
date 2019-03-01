@@ -1,7 +1,22 @@
+from enum import Enum
 from typing import Dict
 
-from map_objects.enums import TileType
 from map_objects.point import Point
+
+
+class TileType(Enum):
+    EMPTY = -1
+    WALL = 0
+    FLOOR = 1
+    CORRIDOR = 2
+    DOOR = 3
+
+    CONNECTION = 100
+
+    ERROR = 999
+
+    def __str__(self):
+        return str(self.name)
 
 
 class Tile:
@@ -62,19 +77,20 @@ class Tile:
         :return: returns a tile at x and y of point with the label provided
         :rtype: Tile
         """
-        if label == TileType.EMPTY:
-            return Tile.empty(point)
-        elif label == TileType.FLOOR:
-            return Tile.floor(point)
-        elif label == TileType.WALL:
-            return Tile.wall(point)
-        elif label == TileType.DOOR:
-            return Tile.door(point)
-        elif label == TileType.CORRIDOR:
-            return Tile.corridor(point)
+        labels = {
+            TileType.EMPTY: Tile.empty(point),
+            TileType.FLOOR: Tile.floor(point),
+            TileType.WALL: Tile.wall(point),
+            TileType.CORRIDOR: Tile.corridor(point),
+            TileType.DOOR: Tile.door(point)
+        }
 
-        print(f"Tile.from_label returned Tile.error. point={point}, label={label}")
-        return Tile.error(point)
+        tile = labels.get(label, Tile.error(point))
+
+        if tile.label == TileType.ERROR:
+            print(f"Tile.from_label returned Tile.error. point={point}, label={label}")
+
+        return tile
 
     @classmethod
     def empty(cls, point=Point(-1, -1)):
