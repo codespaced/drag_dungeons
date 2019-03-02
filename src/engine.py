@@ -94,6 +94,6 @@ def main():
 
 if __name__ == "__main__":
     terminal.open()
-    logger.add("logs/build_maze_{time}.log", level="DEBUG", format="{time:HH:mm:ss} {message}")
+    logger.add("logs/build_maze_{time}.log", level="DEBUG", format="{time:HH:mm:ss.SSS} {message}")
     main()
     terminal.close()

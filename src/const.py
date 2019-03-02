@@ -18,7 +18,7 @@ MAP_SETTINGS = {
     "num_rooms": 100,
     "min_room_size": 3,
     "max_room_size": 5,
-    "room_margin": 1,
+    "room_margin": 3,
 }
 
 COLORS = {
@@ -57,6 +57,7 @@ class Layers:
     MAP = 10
     PLAYER = 20
     LIGHT = 30
+    TESTING = 50
 
 
 class Tiles:
@@ -65,3 +66,4 @@ class Tiles:
     CORRIDOR = "\uE001"
     WALL = "\uE002"
     CONNECT = "\uE003"
+    BLOCK = "\u2588"

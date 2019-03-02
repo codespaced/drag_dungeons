@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict
 
@@ -19,6 +20,7 @@ class TileType(Enum):
         return str(self.name)
 
 
+@dataclass()
 class Tile:
     """
     An object to represent a single tile in the map's grid

@@ -49,6 +49,7 @@ class Dungeon:
                 point = Point(x, y)
                 yield point, self.grids(point)
 
+    # TODO: this needs to be refactored
     def clear_dungeon(self):
         """
         Clears the dungeon data by filling the tile grid with empty tiles and region grid with -1
