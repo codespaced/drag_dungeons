@@ -1,5 +1,5 @@
 import numpy
-
+from loguru import logger
 from typing import Dict, Tuple, Iterable, List
 
 from map_objects.point import Point

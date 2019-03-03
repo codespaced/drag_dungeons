@@ -242,70 +242,73 @@ class DungeonGenerator:
         :param label:
         :type label: map_objects.tile.TileType
         """
-        logger.debug("Entered grow_maze")
-        logger.debug(f"start = {start}, label = {label}")
+        # logger.debug("Entered grow_maze")
+        # logger.debug(f"start = {start}, label = {label}")
         if label is None:
             label = TileType.CORRIDOR
         tiles = []  # tiles to check
         last_direction = Point(0, 0)
 
         region = self.new_region()
-        logger.debug(
-            f"calling place_tile(start={start}, region={region}, label={label}"
-        )
+        # logger.debug(
+        #     f"calling place_tile(start={start}, region={region}, label={label}"
+        # )
+        if not self.can_place(start, last_direction):
+            return
         self.place_tile(start, region=region, label=label)
 
         tiles.append(start)
-        logger.debug(f"tiles={tiles}")
+        # logger.debug(f"tiles={tiles}")
         while len(tiles) > 0:
-            logger.debug(f"length of tiles is {len(tiles)}")
+            # logger.debug(f"length of tiles is {len(tiles)}")
             tile = tiles.pop(-1)  # grab last tile
-            logger.debug(f"tile = {tile}")
-
+            # logger.debug(f"tile = {tile}")
             # see which neighboring tiles can be carved
             open_tiles = []
-            logger.debug(f"open_tiles={open_tiles}")
+            # logger.debug(f"open_tiles={open_tiles}")
             for d in Direction.cardinal():
-                logger.debug(f"calling can_place(tile={tile}, d={d})")
+                # logger.debug(f"calling can_place(tile={tile}, d={d})")
                 if self.can_place(tile, d):
-                    logger.debug("can_place returned True")
+                    # logger.debug("can_place returned True")
                     open_tiles.append(d)
-                    logger.debug(f"open_tiles={open_tiles}")
-                else:
-                    logger.debug("can_place returned False")
+                    # logger.debug(f"open_tiles={open_tiles}")
+                # else:
+                    # logger.debug("can_place returned False")
 
-            logger.debug(f"length of open_tiles is {len(open_tiles)}")
+            # logger.debug(f"length of open_tiles is {len(open_tiles)}")
             if len(open_tiles) > 0:
 
                 if (
                     last_direction in open_tiles
                     and random.randint(1, 101) > self.winding_percent
                 ):
-                    logger.debug(f"last_direction {last_direction} in open_tiles ")
+                    #logger.debug(f"last_direction {last_direction} in open_tiles ")
                     current_direction = last_direction
-                    logger.debug(f"current_direction = {current_direction}")
+                    #logger.debug(f"current_direction = {current_direction}")
                 else:
                     # TODO: refactor for random.choice()
-                    logger.debug(
-                        f"last_direction in open_tiles is {last_direction in open_tiles}"
-                    )
+                    # logger.debug(
+                    #     f"last_direction in open_tiles is {last_direction in open_tiles}"
+                    # )
                     current_direction = open_tiles[
                         random.randint(0, len(open_tiles) - 1)
                     ]
-                    logger.debug(f"current_direction = {current_direction}")
+                    # logger.debug(f"current_direction = {current_direction}")
 
                 self.place_tile(tile + current_direction, region=region, label=label)
                 self.corridors.append(tile + current_direction)
-                self.place_tile(
-                    tile + current_direction * 2, region=region, label=label
-                )
-                self.corridors.append(tile + current_direction * 2)
+                # self.place_tile(
+                #     tile + current_direction * 2, region=region, label=label
+                # )
+                # self.corridors.append(tile + current_direction * 2)
 
-                tiles.append(tile + current_direction * 2)
+                tiles.append(tile + current_direction) #  * 2)
                 last_direction = current_direction
             else:
                 # end current path
                 last_direction = None
+        # logger.debug("Exit grow_maze")
+    
 
     def find_neighbors(self, point: Point, neighbors: Direction = None):
         """
@@ -463,8 +466,8 @@ class DungeonGenerator:
         #     self.build_corridors(start_point)
         #     start_point = self.find_empty_space(3)
 
-        for y in range(1, self.height, 2):
-            for x in range(1, self.width, 2):
+        for y in range(1, self.height - 1):
+            for x in range(1, self.width - 1):
                 point = Point(x, y)
                 if self.dungeon.label(point) != TileType.WALL.value:
                     continue
@@ -502,15 +505,15 @@ class DungeonGenerator:
                 if self.dungeon.label(point) != TileType.WALL.value:
                     continue
 
-                #############################
+                ###############################
                 # maze algorithm
-                #############################
+                ###############################
 
                 self.place_maze(point)
 
     def place_maze(self, start_point: Point, label: TileType = TileType.CORRIDOR):
         points_to_check = []  # tiles to check
-        last_direction = Point(0, 0)
+        # last_direction = Point(0, 0)
         region = None
 
         # place corridor tile at starting point
@@ -528,6 +531,26 @@ class DungeonGenerator:
                 if self.can_place(current_point, d):
                     open_points.append(d)
 
+    # TODO: Refactor get_extents
+    def get_extents(self, point: Point, direction: Point):
+            if direction == Point(0, 0):
+                return (point.NW, point.SE)
+            # north
+            elif direction == Point(0, 1):
+                return (point.N.NW, point.NE)
+            # east
+            elif direction == Point(1, 0):
+                return (point.NE, point.E.SE)
+            # west
+            elif direction == Point(-1, 0):
+                return (point.W.NW, point.SW)
+            # south
+            elif direction == Point(0, -1):
+                return (point.SW, point.S.SE)
+            else:
+                # logger.debug(f"Something went wrong: {point}, {direction}")
+                pass
+
     @logger.catch()
     def place_tile(self, point: Point, label: TileType, region: int):
         tile = Tile.from_label(point, label)
@@ -538,51 +561,13 @@ class DungeonGenerator:
 
     @logger.catch()
     def can_place(self, point: Point, direction: Point) -> bool:
-        logger.debug(f"Entered can_place: point={point}, direction={direction}")
-        x, y = point
+        top_left, bottom_right = self.get_extents(point, direction)
 
-        SliceBounds = namedtuple("SliceBounds", ["x1", "x2", "y1", "y2"])
+        return self.dungeon.in_bounds(top_left) and self.dungeon.in_bounds(bottom_right) and self.are_walls(top_left, bottom_right)
 
-        bounds = {
-            Point(0, 0): SliceBounds(
-                x1=point.x - 1, x2=point.x + 1, y1=point.y - 1, y2=point.y + 1
-            ),
-            Point(0, 1): SliceBounds(
-                x1=point.x - 1, x2=point.x + 1, y1=point.y + 1, y2=point.y + 2
-            ),
-            Point(1, 0): SliceBounds(
-                x1=point.x + 1, x2=point.x + 2, y1=point.y - 1, y2=point.y + 1
-            ),
-            Point(-1, 0): SliceBounds(
-                x1=point.x - 2, x2=point.x - 1, y1=point.y - 1, y2=point.y + 1
-            ),
-            Point(0, -1): SliceBounds(
-                x1=point.x - 1, x2=point.x + 1, y1=point.y - 2, y2=point.y - 1
-            ),
-        }
-
-        # slices = {
-        #     Point(0, 0): np.s_[x-1:x+1, y-1:y+1],
-        #     Point(0, 1): np.s_[x-1:x+1, y+1:y+2],
-        #     Point(0, -1): np.s_[x-1:x+1, y-2:y-1],
-        #     Point(1, 0): np.s_[x+1:x+2, y-1:y+1],
-        #     Point(-1, 0): np.s_[x-2:x-1, y-1:y+1]
-        # }
-
-        x1, x2, y1, y2 = bounds[direction]
-        logger.debug(f"x1={x1}, x2={x2}, y1={y1}, y2={y2}")
-
-        if x1 < 0 or y1 < 0 or x2 >= self.width or y2 >= self.height:
-            logger.debug("point too close to edge, return False")
-            return False
-
-        try:
-            grid_slice = self.dungeon.label_grid[x1:x2, y1:y2]
-            if grid_slice.max() != 0:
-                return False
-            else:
-                return True
-        except IndexError:
-            return False
-        except ValueError:
-            return False
+    def are_walls(self, top_left, bottom_right):
+        for x in range(top_left.x, bottom_right.x + 1):
+            for y in range(bottom_right.y, top_left.y + 1):
+                if self.dungeon.label_grid[x, y] != 0:
+                    return False
+        return True

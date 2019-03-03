@@ -1,4 +1,4 @@
-from bearlibterminal  import terminal
+from bearlibterminal import terminal
 
 
 TITLE = "Drag Dungeons"
@@ -12,12 +12,12 @@ MAP_HEIGHT = 43
 FONT_PATH = "data/consolas10x10.png"
 
 MAP_SETTINGS = {
-    "map_height": 33,
-    "map_width": 43,
+    "map_height": 50,
+    "map_width": 100,
     "tile_size": 10,
     "num_rooms": 100,
-    "min_room_size": 3,
-    "max_room_size": 5,
+    "min_room_size": 4,
+    "max_room_size": 15,
     "room_margin": 3,
 }
 

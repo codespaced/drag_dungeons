@@ -1,6 +1,6 @@
 import esper
 import random
-
+from datetime import datetime
 from bearlibterminal import terminal
 from loguru import logger
 
@@ -15,7 +15,7 @@ from map_objects.tile import Tile, TileType
 class Game:
     action = {}
     game_exit = False
-    map_seed = "TEST_MAP"
+    map_seed = None #"TEST_MAP"
 
     @classmethod
     def quit_game(cls):
@@ -36,7 +36,7 @@ class Game:
             self.world.add_processor(proc, priority=num)
 
     def on_enter(self):
-        random.seed(self.map_seed)
+        random.seed(self.map_seed or datetime.now())
         player = self.world.create_entity()
         self.world.add_component(player, c.Position(x=const.SCREEN_WIDTH/2, y=const.SCREEN_HEIGHT/2))
         self.world.add_component(player, c.Velocity())
@@ -64,7 +64,7 @@ class Game:
                 self.remake_map()
 
     def remake_map(self):
-        random.seed(self.map_seed)
+        random.seed(self.map_seed or datetime.now())
         self.dungeon_generator.clear_map()
         # self.dungeon_generator.initialize_map()
         # self.dungeon_generator.place_random_rooms(
@@ -94,6 +94,6 @@ def main():
 
 if __name__ == "__main__":
     terminal.open()
-    logger.add("logs/build_maze_{time}.log", level="DEBUG", format="{time:HH:mm:ss.SSS} {message}")
+    logger.add("logs/build_maze_{time}.log", level="ERROR", format="{time:HH:mm:ss.SSS} {message}")
     main()
     terminal.close()

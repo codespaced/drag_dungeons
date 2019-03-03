@@ -47,7 +47,7 @@ class RenderProcessor(esper.Processor):
                 terminal.put(point.x, point.y, ch)
 
         terminal.color(terminal.color_from_name("white"))
-        terminal.put(10, 10, "\uE003")
+        # terminal.put(10, 10, "\uE003")
 
     def render_test_map(self):
         pass
